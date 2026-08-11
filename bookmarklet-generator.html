@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="sv">
+<meta charset="utf-8">
+<title>Lanista Topplista bokmärke</title>
+<style>
+body{font-family:system-ui;max-width:800px;margin:40px auto;padding:0 20px}
+input,textarea{width:100%;box-sizing:border-box;padding:10px;margin:6px 0 16px}
+textarea{height:180px;font-family:monospace}
+button{padding:10px 16px}
+</style>
+<h1>Lanista Topplista – bokmärkesgenerator</h1>
+<label>Railway URL</label>
+<input id="u" placeholder="https://din-bot.up.railway.app">
+<label>UPDATE_SECRET</label>
+<input id="s" type="password">
+<button onclick="make()">Skapa kod</button>
+<h2>Bokmärkets URL</h2>
+<textarea id="o" readonly></textarea>
+<p><b>Obs:</b> Dela inte bokmärket/koden offentligt. Den innehåller UPDATE_SECRET, men inte din Lanista-cookie, Lanista-lösenord eller Discord-token.</p>
+<script>
+const T="javascript:(async()=>{try{const R=\"DIN_RAILWAY_URL\".replace(/\\/$/,\"\"),S=\"DITT_UPDATE_SECRET\";if(location.hostname!==\"beta.lanista.se\"){alert(\"Öppna beta.lanista.se och logga in först.\");return}const[t,c]=await Promise.all([fetch(\"/api/avatars/livetoplist?type=todays_xp\",{credentials:\"include\"}),fetch(\"/api/clans/4/members?paginate=false\",{credentials:\"include\"})]);if(!t.ok||!c.ok)throw new Error(\"Lanista svarade inte korrekt. Är du inloggad?\");const td=await t.json(),cd=await c.json();const names=new Map(cd.map(m=>[String(m?.avatar?.name||\"\").toLocaleLowerCase(\"sv-SE\"),m?.avatar]));const entries=(td.toplist||[]).map((p,i)=>({p,i})).filter(x=>names.has(String(x.p?.name||\"\").toLocaleLowerCase(\"sv-SE\"))).map(x=>{const a=names.get(String(x.p.name).toLocaleLowerCase(\"sv-SE\"));return{name:x.p.name,xp:x.p.todays_xp,globalRank:x.i+1,level:x.p.display_level??a?.display_level??a?.current_level??\"\"}});const body=JSON.stringify({secret:S,entries,updatedAt:new Date().toISOString()});await fetch(R+\"/update\",{method:\"POST\",mode:\"no-cors\",headers:{\"Content-Type\":\"text/plain;charset=UTF-8\"},body});alert(\"Topplistan skickades till Discord. Klanmedlemmar på topp 20: \"+entries.length)}catch(e){console.error(e);alert(\"Kunde inte uppdatera topplistan: \"+e.message)}})();";
+function make(){
+ const u=document.getElementById('u').value.trim().replace(/\/$/,'');
+ const s=document.getElementById('s').value.trim();
+ if(!u.startsWith('https://')) return alert('Railway-URL måste börja med https://');
+ if(s.length<12) return alert('Använd en längre UPDATE_SECRET.');
+ const x=T.replace('DIN_RAILWAY_URL',u).replace('DITT_UPDATE_SECRET',s);
+ document.getElementById('o').value=x;
+ navigator.clipboard?.writeText(x).catch(()=>{});
+}
+</script>
+</html>
