@@ -26,8 +26,8 @@ Fyll i din Railway URL och samma UPDATE_SECRET.
 Klicka Skapa kod.
 Skapa en favorit i Edge och klistra in hela javascript:-koden som URL.
 
-När du är inloggad på beta.lanista.se klickar du bokmärket.
-Det hämtar topp 20 och clan 4-medlemmarna i din webbläsare, matchar gladiatornamn lokalt och skickar endast matchade topplisteposter till botten.
+När du är inloggad på lanista.se klickar du bokmärket.
+Det hämtar topp 20 och klan 5-medlemmarna i din webbläsare, matchar gladiatornamn lokalt och skickar endast matchade topplisteposter till botten.
 
 ## Discord-behörigheter
 Botten behöver:

@@ -22,7 +22,7 @@ function fmt(n){ return new Intl.NumberFormat("sv-SE").format(Number(n)||0); }
 
 function buildMessage(payload){
   const entries = Array.isArray(payload.entries) ? payload.entries : [];
-  const lines = ["🏆 **HALVTIDSKRIGARNA – DAGENS XP**", ""];
+  const lines = ["🏆 **JÄRNPAKTEN – DAGENS XP**", ""];
   if (!entries.length) {
     lines.push("_Ingen klanmedlem finns på Lanistas topp 20 just nu._");
   } else {
@@ -51,7 +51,7 @@ async function upsert(channel, content){
     const recent = await channel.messages.fetch({limit:100});
     const existing = recent.find(m =>
       m.author.id === client.user.id &&
-      m.content.startsWith("🏆 **HALVTIDSKRIGARNA – DAGENS XP**")
+      m.content.startsWith("🏆 **JÄRNPAKTEN – DAGENS XP**")
     );
     if(existing){
       await existing.edit({content, allowedMentions:{parse:[]}});
