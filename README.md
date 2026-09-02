@@ -29,6 +29,8 @@ Skapa en favorit i Edge och klistra in hela javascript:-koden som URL.
 När du är inloggad på lanista.se klickar du bokmärket.
 Det hämtar topp 20 och klan 5-medlemmarna i din webbläsare, matchar gladiatornamn lokalt och skickar endast matchade topplisteposter till botten.
 
+Vid varje uppdatering raderar botten sina tidigare topplisteinlägg i kanalen och skickar därefter topplistan som ett helt nytt meddelande.
+
 ## Discord-behörigheter
 Botten behöver:
 - View Channel

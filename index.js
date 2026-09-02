@@ -46,20 +46,17 @@ function buildMessage(payload){
   return lines.join("\n").slice(0,2000);
 }
 
-async function upsert(channel, content){
-  try{
-    const recent = await channel.messages.fetch({limit:100});
-    const existing = recent.find(m =>
-      m.author.id === client.user.id &&
-      m.content.startsWith("🏆 **JÄRNPAKTEN – DAGENS XP**")
-    );
-    if(existing){
-      await existing.edit({content, allowedMentions:{parse:[]}});
-      return;
-    }
-  }catch(e){
-    console.warn("Kunde inte läsa tidigare meddelanden:", e.message);
+async function replaceToplistMessage(channel, content){
+  const recent = await channel.messages.fetch({limit:100});
+  const oldMessages = recent.filter(m =>
+    m.author.id === client.user.id &&
+    m.content.startsWith("🏆 **JÄRNPAKTEN – DAGENS XP**")
+  );
+
+  for (const message of oldMessages.values()) {
+    await message.delete();
   }
+
   await channel.send({content, allowedMentions:{parse:[]}});
 }
 
@@ -83,7 +80,7 @@ app.post("/update", async (req,res)=>{
     const channel = await client.channels.fetch(TOPLIST_CHANNEL_ID);
     if(!channel || !channel.isTextBased()) return res.status(500).send("Fel kanal-ID");
 
-    await upsert(channel, buildMessage({entries, updatedAt:payload.updatedAt}));
+    await replaceToplistMessage(channel, buildMessage({entries, updatedAt:payload.updatedAt}));
     console.log(`Topplistan uppdaterad: ${entries.length} klanmedlemmar.`);
     res.send("OK");
   }catch(e){
