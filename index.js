@@ -14,6 +14,19 @@ if (!DISCORD_TOKEN || !TOPLIST_CHANNEL_ID || !UPDATE_SECRET) {
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 const app = express();
 app.use(express.text({ type: "*/*", limit: "200kb" }));
+// Tillåt bokmärket på Lanista att läsa HTTP-status och fel från Railway.
+app.use((req,res,next)=>{
+  const origin=req.headers.origin;
+  if(["https://lanista.se","https://www.lanista.se"].includes(origin)){
+    res.setHeader("Access-Control-Allow-Origin",origin);
+    res.setHeader("Vary","Origin");
+  }
+  res.setHeader("Access-Control-Allow-Methods","GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers","Content-Type");
+  if(req.method==="OPTIONS")return res.sendStatus(204);
+  next();
+});
+
 
 app.get("/", (req,res)=>res.send("Lanista Topplista Bot är online."));
 app.get("/health", (req,res)=>res.json({ok:true, discordReady:client.isReady()}));
@@ -85,7 +98,7 @@ app.post("/update", async (req,res)=>{
     res.send("OK");
   }catch(e){
     console.error(e);
-    res.status(500).send("Internt fel");
+    res.status(500).send("Internt fel: "+(e?.message||String(e)));
   }
 });
 
