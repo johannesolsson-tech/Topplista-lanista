@@ -29,8 +29,7 @@ function buildMessage(payload){
     entries.forEach((e,i)=>{
       const medal = ["🥇","🥈","🥉"][i] || `**${i+1}.**`;
       const level = e.level ? ` • Grad ${e.level}` : "";
-      const profile = e.profileName ? ` • Profil: ${e.profileName}` : "";
-      lines.push(`${medal} **${e.name}** — ${fmt(e.xp)} XP — **#${e.globalRank} totalt**${level}${profile}`);
+      lines.push(`${medal} **${e.name}** — ${fmt(e.xp)} XP — **#${e.globalRank} totalt**${level}`);
     });
   }
   lines.push("");
@@ -75,8 +74,7 @@ app.post("/update", async (req,res)=>{
       name:String(e.name||"").slice(0,80),
       xp:Number(e.xp||0),
       globalRank:Number(e.globalRank||0),
-      level:String(e.level||"").slice(0,20),
-      profileName:String(e.profileName||"").slice(0,80)
+      level:String(e.level||"").slice(0,20)
     })).filter(e=>e.name && e.globalRank>0);
 
     const channel = await client.channels.fetch(TOPLIST_CHANNEL_ID);
