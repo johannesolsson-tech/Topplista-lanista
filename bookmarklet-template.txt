@@ -19,14 +19,7 @@ javascript:(async function run(c){
       const id=p?.id??p?.avatar_id??p?.avatar?.id;
       const key=String(p?.name||"").trim().toLocaleLowerCase("sv-SE");
       if(!memberIds.has(String(id))&&!names.has(key))continue;
-      let profileName="";
-      if(id!=null){
-        try {
-          const detail=await get("/api/avatars/"+encodeURIComponent(id));
-          profileName=String(detail?.user_name??detail?.data?.user_name??"").trim();
-        }catch(error){console.warn("Profil kunde inte hämtas för "+p.name,error);}
-      }
-      entries.push({name:p.name,xp:p.todays_xp,globalRank:i+1,level:p.display_level??p.current_level??"",profileName});
+      entries.push({name:p.name,xp:p.todays_xp,globalRank:i+1,level:p.display_level??p.current_level??""});
     }
     await fetch(c.url+"/update",{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=UTF-8"},body:JSON.stringify({secret:c.secret,entries,updatedAt:new Date().toISOString()})});
     // Äldre topplistebotten saknar CORS, därför kan webbläsaren inte läsa svaret.
