@@ -28,9 +28,10 @@ const runner=async function run(c){
       if(!memberIds.has(String(id))&&!names.has(key))continue;
       entries.push({name:p.name,xp:p.todays_xp,globalRank:i+1,level:p.display_level??p.current_level??""});
     }
-    await fetch(c.url+"/update",{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=UTF-8"},body:JSON.stringify({secret:c.secret,entries,updatedAt:new Date().toISOString()})});
-    // Äldre topplistebotten saknar CORS, därför kan webbläsaren inte läsa svaret.
-    alert("Topplistan skickades. "+entries.length+" klanmedlemmar hittades. Kontrollera Discord.");
+    const response=await fetch(c.url+"/update",{method:"POST",headers:{"Content-Type":"text/plain;charset=UTF-8"},body:JSON.stringify({secret:c.secret,entries,updatedAt:new Date().toISOString()})});
+    const message=await response.text();
+    if(!response.ok)throw Error("Railway HTTP "+response.status+": "+message);
+    alert("Discord uppdaterat! "+entries.length+" klanmedlemmar hittades.");
   } catch(e){console.error(e);alert("Topplistefel: "+e.message);}
 };
 document.getElementById("make").onclick=()=>{
