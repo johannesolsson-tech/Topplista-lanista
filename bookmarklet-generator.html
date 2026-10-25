@@ -1,32 +1,42 @@
-<!doctype html>
-<html lang="sv">
-<meta charset="utf-8">
-<title>Lanista Topplista bokmärke</title>
-<style>
-body{font-family:system-ui;max-width:800px;margin:40px auto;padding:0 20px}
-input,textarea{width:100%;box-sizing:border-box;padding:10px;margin:6px 0 16px}
-textarea{height:180px;font-family:monospace}
-button{padding:10px 16px}
-</style>
-<h1>Lanista Topplista – bokmärkesgenerator</h1>
-<label>Railway URL</label>
-<input id="u" placeholder="https://din-bot.up.railway.app">
-<label>UPDATE_SECRET</label>
-<input id="s" type="password">
-<button onclick="make()">Skapa kod</button>
-<h2>Bokmärkets URL</h2>
-<textarea id="o" readonly></textarea>
-<p><b>Obs:</b> Dela inte bokmärket/koden offentligt. Den innehåller UPDATE_SECRET, men inte din Lanista-cookie, Lanista-lösenord eller Discord-token.</p>
+<!doctype html><html lang="sv"><meta charset="utf-8"><title>Topplistan – bokmärkesgenerator</title>
+<style>body{font:16px system-ui;max-width:850px;margin:40px auto;padding:0 20px}input,textarea{box-sizing:border-box;width:100%;padding:10px;margin:8px 0 18px}textarea{height:200px}button{padding:12px 18px}</style>
+<h1>Järnpakten – Topplista</h1><p>Hämtar topp 20 och visar gladiatornamn från Järnpakten (klan 2), utan Discord-ping.</p>
+<label>Railway URL<input id="url" placeholder="https://din-service.up.railway.app"></label>
+<label>UPDATE_SECRET<input id="secret" type="password"></label>
+<button id="make">Skapa bokmärke</button><p>Kopiera hela koden nedan till URL-fältet i en Edge-favorit.</p><textarea id="output" readonly></textarea>
 <script>
-const T="javascript:(async()=>{try{const R=\"DIN_RAILWAY_URL\".replace(/\\/$/,\"\"),S=\"DITT_UPDATE_SECRET\";if(location.hostname!==\"lanista.se\"){alert(\"Öppna lanista.se och logga in först.\");return}const[t,c]=await Promise.all([fetch(\"/api/avatars/livetoplist?type=todays_xp\",{credentials:\"include\"}),fetch(\"/api/clans/5/members?paginate=false\",{credentials:\"include\"})]);if(!t.ok||!c.ok)throw new Error(\"Lanista svarade inte korrekt. Är du inloggad?\");const td=await t.json(),cd=await c.json();const names=new Map(cd.map(m=>[String(m?.avatar?.name||\"\").toLocaleLowerCase(\"sv-SE\"),m?.avatar]));const entries=(td.toplist||[]).map((p,i)=>({p,i})).filter(x=>names.has(String(x.p?.name||\"\").toLocaleLowerCase(\"sv-SE\"))).map(x=>{const a=names.get(String(x.p.name).toLocaleLowerCase(\"sv-SE\"));return{name:x.p.name,xp:x.p.todays_xp,globalRank:x.i+1,level:x.p.display_level??a?.display_level??a?.current_level??\"\"}});const body=JSON.stringify({secret:S,entries,updatedAt:new Date().toISOString()});await fetch(R+\"/update\",{method:\"POST\",mode:\"no-cors\",headers:{\"Content-Type\":\"text/plain;charset=UTF-8\"},body});alert(\"Topplistan skickades till Discord. Klanmedlemmar på topp 20: \"+entries.length)}catch(e){console.error(e);alert(\"Kunde inte uppdatera topplistan: \"+e.message)}})();";
-function make(){
- const u=document.getElementById('u').value.trim().replace(/\/$/,'');
- const s=document.getElementById('s').value.trim();
- if(!u.startsWith('https://')) return alert('Railway-URL måste börja med https://');
- if(s.length<12) return alert('Använd en längre UPDATE_SECRET.');
- const x=T.replace('DIN_RAILWAY_URL',u).replace('DITT_UPDATE_SECRET',s);
- document.getElementById('o').value=x;
- navigator.clipboard?.writeText(x).catch(()=>{});
-}
-</script>
-</html>
+const runner=async function run(c){
+  try {
+    if(!["lanista.se","www.lanista.se"].includes(location.hostname)) throw Error("Öppna lanista.se och logga in först.");
+    const get=async path=>{const response=await fetch(path,{credentials:"include"});if(!response.ok)throw Error(path+" HTTP "+response.status);return response.json();};
+    const unwrap=x=>Array.isArray(x)?x:(Array.isArray(x?.data)?x.data:Array.isArray(x?.members)?x.members:[]);
+    const [top,clan]=await Promise.all([get("/api/avatars/livetoplist?type=todays_xp"),get("/api/clans/2/members?paginate=false")]);
+    const members=unwrap(clan);
+    const memberIds=new Set();
+    const names=new Set();
+    for(const m of members){
+      const a=m?.avatar||m;
+      const id=a?.id??m?.avatar_id;
+      if(id!=null)memberIds.add(String(id));
+      if(a?.name)names.add(String(a.name).trim().toLocaleLowerCase("sv-SE"));
+    }
+    const entries=[];
+    const ranking=Array.isArray(top?.toplist)?top.toplist:(Array.isArray(top)?top:[]);
+    for(const [i,p] of ranking.entries()){
+      const id=p?.id??p?.avatar_id??p?.avatar?.id;
+      const key=String(p?.name||"").trim().toLocaleLowerCase("sv-SE");
+      if(!memberIds.has(String(id))&&!names.has(key))continue;
+      entries.push({name:p.name,xp:p.todays_xp,globalRank:i+1,level:p.display_level??p.current_level??""});
+    }
+    await fetch(c.url+"/update",{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=UTF-8"},body:JSON.stringify({secret:c.secret,entries,updatedAt:new Date().toISOString()})});
+    // Äldre topplistebotten saknar CORS, därför kan webbläsaren inte läsa svaret.
+    alert("Topplistan skickades. "+entries.length+" klanmedlemmar hittades. Kontrollera Discord.");
+  } catch(e){console.error(e);alert("Topplistefel: "+e.message);}
+};
+document.getElementById("make").onclick=()=>{
+ const url=document.getElementById("url").value.trim().replace(/\/$/,"");
+ const secret=document.getElementById("secret").value;
+ if(!/^https:\/\//.test(url)||!secret)return alert("Ange HTTPS Railway URL och UPDATE_SECRET.");
+ document.getElementById("output").value="javascript:("+runner.toString()+")("+JSON.stringify({url,secret})+")";
+};
+</script></html>

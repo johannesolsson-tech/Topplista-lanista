@@ -1,1 +1,28 @@
-javascript:(async()=>{try{const R="DIN_RAILWAY_URL".replace(/\/$/,""),S="DITT_UPDATE_SECRET";if(location.hostname!=="lanista.se"){alert("Öppna lanista.se och logga in först.");return}const[t,c]=await Promise.all([fetch("/api/avatars/livetoplist?type=todays_xp",{credentials:"include"}),fetch("/api/clans/5/members?paginate=false",{credentials:"include"})]);if(!t.ok||!c.ok)throw new Error("Lanista svarade inte korrekt. Är du inloggad?");const td=await t.json(),cd=await c.json();const names=new Map(cd.map(m=>[String(m?.avatar?.name||"").toLocaleLowerCase("sv-SE"),m?.avatar]));const entries=(td.toplist||[]).map((p,i)=>({p,i})).filter(x=>names.has(String(x.p?.name||"").toLocaleLowerCase("sv-SE"))).map(x=>{const a=names.get(String(x.p.name).toLocaleLowerCase("sv-SE"));return{name:x.p.name,xp:x.p.todays_xp,globalRank:x.i+1,level:x.p.display_level??a?.display_level??a?.current_level??""}});const body=JSON.stringify({secret:S,entries,updatedAt:new Date().toISOString()});await fetch(R+"/update",{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=UTF-8"},body});alert("Topplistan skickades till Discord. Klanmedlemmar på topp 20: "+entries.length)}catch(e){console.error(e);alert("Kunde inte uppdatera topplistan: "+e.message)}})();
+javascript:(async function run(c){
+  try {
+    if(!["lanista.se","www.lanista.se"].includes(location.hostname)) throw Error("Öppna lanista.se och logga in först.");
+    const get=async path=>{const response=await fetch(path,{credentials:"include"});if(!response.ok)throw Error(path+" HTTP "+response.status);return response.json();};
+    const unwrap=x=>Array.isArray(x)?x:(Array.isArray(x?.data)?x.data:Array.isArray(x?.members)?x.members:[]);
+    const [top,clan]=await Promise.all([get("/api/avatars/livetoplist?type=todays_xp"),get("/api/clans/2/members?paginate=false")]);
+    const members=unwrap(clan);
+    const memberIds=new Set();
+    const names=new Set();
+    for(const m of members){
+      const a=m?.avatar||m;
+      const id=a?.id??m?.avatar_id;
+      if(id!=null)memberIds.add(String(id));
+      if(a?.name)names.add(String(a.name).trim().toLocaleLowerCase("sv-SE"));
+    }
+    const entries=[];
+    const ranking=Array.isArray(top?.toplist)?top.toplist:(Array.isArray(top)?top:[]);
+    for(const [i,p] of ranking.entries()){
+      const id=p?.id??p?.avatar_id??p?.avatar?.id;
+      const key=String(p?.name||"").trim().toLocaleLowerCase("sv-SE");
+      if(!memberIds.has(String(id))&&!names.has(key))continue;
+      entries.push({name:p.name,xp:p.todays_xp,globalRank:i+1,level:p.display_level??p.current_level??""});
+    }
+    await fetch(c.url+"/update",{method:"POST",mode:"no-cors",headers:{"Content-Type":"text/plain;charset=UTF-8"},body:JSON.stringify({secret:c.secret,entries,updatedAt:new Date().toISOString()})});
+    // Äldre topplistebotten saknar CORS, därför kan webbläsaren inte läsa svaret.
+    alert("Topplistan skickades. "+entries.length+" klanmedlemmar hittades. Kontrollera Discord.");
+  } catch(e){console.error(e);alert("Topplistefel: "+e.message);}
+})({url:"DIN_RAILWAY_URL",secret:"DITT_UPDATE_SECRET"})
