@@ -1,3 +1,13 @@
+# Topplistan – profilnamn och klan 2 (testversion)
+
+Ny bokmärkesgenerator hämtar Lanistas topp 20, matchar gladiatorer mot medlemmarna i klan **2**, och hämtar `user_name` från `/api/avatars/{id}` för matchade gladiatorer. Discord-meddelandet visar **Profil: ...** när uppgiften finns. Ingen manuell Discord-ID-koppling behövs för topplistan eftersom den inte pingar användare.
+
+Det befintliga Railway-gränssnittet och variablerna är oförändrade. Generera nytt bokmärke med nya HTML-filen.
+
+**Ej live-testat:** kontrollera särskilt att topplisteposterna har `id` eller att namnmatchningen fungerar, och att Discord-meddelandet uppdateras. Det gamla bokmärket påverkas inte.
+
+---
+
 # Lanista Topplista Bot v1
 
 Separat från Kajsa-ordrar.
