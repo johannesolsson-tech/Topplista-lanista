@@ -1,6 +1,6 @@
 <!doctype html><html lang="sv"><meta charset="utf-8"><title>Topplistan – bokmärkesgenerator</title>
 <style>body{font:16px system-ui;max-width:850px;margin:40px auto;padding:0 20px}input,textarea{box-sizing:border-box;width:100%;padding:10px;margin:8px 0 18px}textarea{height:200px}button{padding:12px 18px}</style>
-<h1>Järnpakten – Topplista</h1><p>Hämtar topp 20 och visar gladiatornamn från Järnpakten (klan 2), utan Discord-ping.</p>
+<h1>Järnpakten – Topplista</h1><p>Hämtar topp 20 och visar alla gladiatorer vars ägare har minst en gladiator i Järnpakten (klan 2), även om topplistegladiatorn är i en annan klan. Ingen Discord-ping.</p>
 <label>Railway URL<input id="url" placeholder="https://din-service.up.railway.app"></label>
 <label>UPDATE_SECRET<input id="secret" type="password"></label>
 <button id="make">Skapa bokmärke</button><p>Kopiera hela koden nedan till URL-fältet i en Edge-favorit.</p><textarea id="output" readonly></textarea>
@@ -12,26 +12,27 @@ const runner=async function run(c){
     const unwrap=x=>Array.isArray(x)?x:(Array.isArray(x?.data)?x.data:Array.isArray(x?.members)?x.members:[]);
     const [top,clan]=await Promise.all([get("/api/avatars/livetoplist?type=todays_xp"),get("/api/clans/2/members?paginate=false")]);
     const members=unwrap(clan);
-    const memberIds=new Set();
-    const names=new Set();
-    for(const m of members){
-      const a=m?.avatar||m;
-      const id=a?.id??m?.avatar_id;
-      if(id!=null)memberIds.add(String(id));
-      if(a?.name)names.add(String(a.name).trim().toLocaleLowerCase("sv-SE"));
-    }
-    const entries=[];
+    if(!Array.isArray(members)||!members.length)throw Error("Klanens medlemslista är tom eller kunde inte läsas. Ingen uppdatering skickades.");
+    const userIds=new Set(members.map(m=>m?.avatar?.user_id??m?.user_id).filter(id=>id!=null).map(String));
+    if(!userIds.size)throw Error("Inga user_id hittades i klanens medlemslista.");
     const ranking=Array.isArray(top?.toplist)?top.toplist:(Array.isArray(top)?top:[]);
-    for(const [i,p] of ranking.entries()){
+    if(!ranking.length)throw Error("Topplistan är tom eller har okänt format. Ingen uppdatering skickades.");
+    const details=await Promise.all(ranking.slice(0,20).map(async p=>{
       const id=p?.id??p?.avatar_id??p?.avatar?.id;
-      const key=String(p?.name||"").trim().toLocaleLowerCase("sv-SE");
-      if(!memberIds.has(String(id))&&!names.has(key))continue;
+      if(id==null)throw Error("En gladiator saknar id i topplistan.");
+      return get("/api/avatars/"+encodeURIComponent(String(id)));
+    }));
+    const entries=[];
+    for(const [i,p] of ranking.slice(0,20).entries()){
+      const owner=details[i]?.user_id??details[i]?.avatar?.user_id;
+      if(owner==null)throw Error("user_id saknas för "+String(p?.name||"gladiator")+". Ingen uppdatering skickades.");
+      if(!userIds.has(String(owner)))continue;
       entries.push({name:p.name,xp:p.todays_xp,globalRank:i+1,level:p.display_level??p.current_level??""});
     }
     const response=await fetch(c.url+"/update",{method:"POST",headers:{"Content-Type":"text/plain;charset=UTF-8"},body:JSON.stringify({secret:c.secret,entries,updatedAt:new Date().toISOString()})});
     const message=await response.text();
     if(!response.ok)throw Error("Railway HTTP "+response.status+": "+message);
-    alert("Discord uppdaterat! "+entries.length+" klanmedlemmar hittades.");
+    alert("Discord uppdaterat! "+entries.length+" gladiatorer från Järnpaktens spelare hittades.");
   } catch(e){console.error(e);alert("Topplistefel: "+e.message);}
 };
 document.getElementById("make").onclick=()=>{
